@@ -15,9 +15,59 @@ class ProductController extends Controller
      *
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Http\Response|\Illuminate\View\View
      */
-    public function index()
+    public function index(Request $request)
     {
-        return view('products.index');
+        //$variants = Variant::pluck('id');
+        //$variants = Variant::with('variants')->get();
+        $variants = Variant::get();
+        //return $variants->variants_name(1);
+        foreach($variants as $variant) {
+            //echo $variant->variants_name();
+        }
+        //return $variants->variants_2();
+        // $variants = $variants->whereHas('variants', function ($v) {
+        //     $v->distinct('variant');
+        // });
+        //$product_variants = ProductVariant::pluck('variant');
+        //return $product_variants->groupBy('variant');
+        $product_variants = ProductVariant::select('variant_id', 'variant')->distinct()->get();
+        //return $product_variants;
+        //return $product_variants->pluck('variant');
+
+        $products = Product::with('product_variant_prices');
+        //return $products->get();
+        if($request->title != NULL) {
+            $products = $products->where('title', 'like', '%' . $request->title . '%');
+        }
+        if($request->variant != NULL) {
+            $products = $products->WhereHas('product_variant_prices.color', function ($p) use ($request) {
+                $p->where('variant', $request->variant);
+            })
+            ->orWhereHas('product_variant_prices.size', function ($q) use ($request) {
+                $q->where('variant', $request->variant);
+            })
+            ->orWhereHas('product_variant_prices.style', function ($q) use ($request) {
+                $q->where('variant', $request->variant);
+            });
+        }
+        if($request->price_from != NULL) {
+            $products = $products->WhereHas('product_variant_prices', function ($p) use ($request) {
+                $p->where('price', '>=', $request->price_from);
+            });
+        }
+        if($request->price_to != NULL) {
+            $products = $products->WhereHas('product_variant_prices', function ($p) use ($request) {
+                $p->where('price', '<=', $request->price_to);
+            });
+        }
+        if($request->date != NULL) {
+            $start = date('Y-m-d', strtotime($request->date)).' 00:00:00';
+            $end = date('Y-m-d', strtotime($request->date)).' 23:59:59';
+            $products = $products->where('created_at', '>=', $start)->where('created_at','<=', $end);
+        }
+        //$products = $products->get();
+        $products = $products->paginate(5);
+        return view('products.index', compact('products', 'variants'));
     }
 
     /**

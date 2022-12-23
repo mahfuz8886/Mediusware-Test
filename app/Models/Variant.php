@@ -10,4 +10,13 @@ class Variant extends Model
         'title', 'description'
     ];
 
+    public function variants() {
+        return $this->hasMany(ProductVariant::class);
+    }
+
+    public function variants_name() {
+        //return Variant::select('title')->where('id', $id)->first();
+        return ProductVariant::where('variant_id', $this->id)->select('variant')->distinct()->get();
+    }
+
 }
