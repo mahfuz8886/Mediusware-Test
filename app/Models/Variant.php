@@ -15,7 +15,6 @@ class Variant extends Model
     }
 
     public function variants_name() {
-        //return Variant::select('title')->where('id', $id)->first();
         return ProductVariant::where('variant_id', $this->id)->select('variant')->distinct()->get();
     }
 
